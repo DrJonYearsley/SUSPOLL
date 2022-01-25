@@ -1,4 +1,4 @@
-function dydt = heatfluxhead_Tth_active(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k,Ab,T_aK)
+function dydt = heatfluxhead_Tth_active(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k,Ab,T_aK,T_mK)
 %This function is for bumblebees
 %Q = S + R - E - C + I - T; 
 %where y is T_th 
@@ -6,9 +6,10 @@ function dydt = heatfluxhead_Tth_active(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C
 %for use with constant environmental conditions
 %dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I*exp(-E/(k.*y)))  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - Ab*(1./(1+exp(-3.*(y - 316.15)))); %heatsink version or Tairs version
 %dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I*exp(-E/(k.*y)))  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - 0.0367.*( 1./(1+exp(-1.*(y - 315.15))) );
-%dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I*exp(-E/(k.*y)))  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - Ab./(1+exp(-5.*(y - 315.15)) );
-%dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I*exp(-E/(k.*y)))  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - Ab*(y-T_aK)*(1./(1+exp(-2.*(y - 316.15)))); %heatsink version or Tairs version
-dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I)  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - Ab*(y-T_aK)*(1./(1+exp(-2.*(y - 316.15)))); %just to try a constant I...
+%dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I*exp(-E/(k.*y)))  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - Ab./(1+exp(-2.*(y - 315.15)) );
+dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I*exp(-E/(k.*y)))  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - (Ab*(y-T_aK)*(1./(1+exp(-3.*(y - T_mK))))); %heatsink version or Tairs version
+%dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I*exp(-E/(k.*y)))  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - Ab*(2*(y-T_aK)*(1./(1+exp(-2.*(y - 315.15))))+(y-T_aK)); %heatsink version or Tairs version
+%dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I)  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - Ab*(y-T_aK)*(1./(1+exp(-2.*(y - 316.15)))); %just to try a constant I...
 
 %dydt = (S + R1 - R2.*y.^4 - C1.*y - C2 + I*exp(-E/(k.*y)))  + (S_h + R1_h - R2_h.*(y-delta_T_h).^4 - C1_h.*(y-delta_T_h) - C2_h) - Ab*(
 %(1./(1+exp(1.*(y - 315.15))))-(1./(1+exp(1.*(y - 322.15)))) );  %bothways
