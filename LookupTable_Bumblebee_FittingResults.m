@@ -1,10 +1,16 @@
+FittedValues = readtable('Fitted_i0_s_5.csv','ReadVariableNames',true);
+
 Temps = zeros(51,6); %rows for temperature, colums for resting/shivering/flying
 TimeTo45 = zeros(51,7);
 TimeTo30 = zeros(51,7);
-solve_TimeTo45 = true;
+solve_TimeTo45 = false;
 solve_TimeTo30 = false;
 
 TimeTo45(:,7)=0:50;  %stick air temp in the last column so I don't have to edit
+
+%%% for plotting
+air=0:50;
+thorax=air;
 
 %%%%%% Constant values %%%%%%%%
 k = 8.617333262145*10^(-5);   %Bolzmann's constant
@@ -46,11 +52,9 @@ n = 1.975485;       %%fitted from log(Nu) = log(Re), or Nu = C_le^n with CChurch
 delta_T_h = 2.9;
 T_mK = 42+273.15;     %median temp for  abdomen cooling
 %s = 0.9;  %fraction of internal temp at surface - default value
-s = 0.95;  %fraction of internal temp at surface - fitted value
 
 I_resting = 0.001349728;     %Kammer1974, table 1, for 25C, converted to W
 %I_flying = 0.06229515;     %Kammer1974, converted to W
-I_flying = 0.02;     %fitted value
 %I_flying = 0.2097035;     %Heinrich1975, converted to W
 %masses = [M_b M_b M_b];   %reference weight for Kammer only data is just M_b for now
 %masses = [M_b (0.25+0.60)/2 (0.25+0.60)/2];   %reference weight for Heinrich (flying)
@@ -64,10 +68,15 @@ r = 0.0367/9;  %Calculated from Heinrich1976, 2.2 J/min at T_th-T_abdomen = 9C
 %r = 0.03;    %playing around with value to get desired behaviour
 
 %for i = 1:31
+
+for fit_index = 1:height(FittedValues)
+s = FittedValues.f_values5(fit_index);  %fraction of internal temp at surface - fitted value
+I_flying = FittedValues.i0_values5(fit_index);     %fitted value for active metabolic rate
+
 for i = 1:51  %go through temps 0 to 50 
 %    for j = 1:6
-%    for j = [6]
-    for j = 3:6
+    for j = [6]
+%    for j = 3:6
 %    for j = [1 3 4 6]    %go through the three metabolic states (only passive j=1:3; only active j=4:6)
 % j = 3;     %temporarily do just flying       
 
@@ -223,12 +232,12 @@ Temps_mean(i,j) = mean(y(1000:length(tspan)))-273.15;     %median instead of mea
 %Temps(i,j) = y(length(y))-273.15;
 end
 
-[i j]
+[i j fit_index]
 
     end
 end
-writematrix(Temps_median,'LookupTable_Bumblebee_default.csv');
-writematrix(TimeTo45,'TimeTo50_Bumblebee_Opt1.csv');
+% writematrix(Temps_median,'LookupTable_Bumblebee_default.csv');
+% writematrix(TimeTo45,'TimeTo50_Bumblebee_Opt1.csv');
 
 TimeTo45_min = TimeTo45/60;
 
@@ -259,136 +268,23 @@ TimeTo45_min = TimeTo45/60;
 
 
 %plot thorax temp as a function of air temp
-figure(3) %create a new plot window for the lookup table plot
+figure(1) %create a new plot window for the lookup table plot
 hold on
-air=0:50;
-thorax=air;
-%plines = ['-' '-' '-' '--' '--' '--'];
-%plot(air,Temps_median(:,1),'b-')  %passive, resting
-%plot(air,Temps_median(:,2),'y-')  %passive, shivering
-%plot(air,Temps_median(:,3),'r-')  %passive, flying
-plot(air,Temps_median(:,4),'b-')  %active, resting (-. for dash-dotted line)
-plot(air,Temps_median(:,5),'y-')  %active, shivering
-plot(air(13:51),Temps_median(13:51,6),'r-')  %active, flying
+plot(air,Temps_median(:,6),'r-')  %active, flying
+alpha(0.1)
+
+end
+
+%plot thorax temp as a function of air temp
+figure(1) %create a new plot window for the lookup table plot
 ylim([20,45])
-%plot(air,thorax,'k:')
-% title('Thorax temp - median')
+%title('Thorax temp - median')
 xlabel('Air Temperature (C)')
 ylabel('Equilibrium Thorax Temperature (C)')
 yline(30);  %30 is the min thorax temp for flight, Heinrich1983
 yline(45);   %lethal thorax temp Heinrich1976?ish
-%yline(43,'k:');
 II=area([0,50],[45 45],42,'EdgeColor', 'none', 'FaceColor', 'r');
 alpha(0.1)
 fill(42,45, [0.9 0.9 0.9])
 %hold off;
-%legend('resting','flying','environmental','behavioural','T_{th} = T_{air}','Location','southeast');
-%legend('resting, physiological','flying, physiological','resting, behavioural','flying, behavioural','T_{th} = T_{air}','Location','southeast');
-legend('resting','shivering','flying','Location','southeast');
-
-
-% %plot thorax temp as a function of air temp with range due to M_b
-% figure(6) %create a new plot window for the lookup table plot
-% hold on
-% air=0:50;
-% thorax=air;
-% plot(air,MB_Range(:,1),'r-')
-% plot(air,MB_Range(:,2),'r-')
-% plot(air,MB_Range(:,3),'r-')
-% air2 = [air,fliplr(air)];
-% inBetween=[MB_Range(:,1), fliplr(MB_Range(:,3))];
-% fill(air2,inBetween,'r')
-% hold off;
-% %legend('resting','flying','environmental','behavioural','T_{th} = T_{air}','Location','southeast');
-% legend('resting, physiological','flying, physiological','resting, behavioural','flying, behavioural','T_{th} = T_{air}','Location','southeast');
-
-% %plot thorax temp as a function of air temp using mean
-% figure(4) %create a new plot window for the lookup table plot
-% hold on
-% air=0:50;
-% thorax=air;
-% %plines = ['-' '-' '-' '--' '--' '--'];
-% plot(air,Temps_mean(:,1),'b-')  %passive, resting
-% %plot(air,Temps_mean(:,2),'y-')  %passive, shivering
-% plot(air,Temps_mean(:,3),'r-')  %passive, flying
-% plot(air,Temps_mean(:,4),'b-.')  %active, resting
-% %plot(air,Temps_mean(:,5),'y-.')  %active, shivering
-% plot(air,Temps_mean(:,6),'r-.')  %active, flying
-% plot(air,thorax,'k:')
-% title('Thorax temp - mean')
-% xlabel('Air Temperature (C)')
-% ylabel('Equilibrium Thorax Temperature (C)')
-% yline(30);  %30 is the min thorax temp for flight, Heinrich1983
-% yline(45);   %lethal thorax temp Heinrich1976?ish
-% %yline(43,'k:');
-% II=area([0,50],[45 45],42,'EdgeColor', 'none', 'FaceColor', 'r');
-% alpha(0.1)
-% fill(42,45, [0.9 0.9 0.9])
-% hold off;
-% %legend('resting','flying','environmental','behavioural','T_{th} = T_{air}','Location','southeast');
-% legend('resting','flying','','','T_{th} = T_{air}','Location','southeast');
-
-% %%% Plot time to 50C as a function of air temp
-% figure(4) %create a new plot window for the lookup table plot
-% hold on
-% plot(air,TimeTo45(:,1)/60,'b-')  %passive, resting
-% plot(air,TimeTo45(:,2)/60,'y-')  %passive, shivering
-% plot(air,TimeTo45(:,3)/60,'r-')  %passive, flying
-% plot(air,TimeTo45(:,4)/60,'b-.')  %active, resting
-% plot(air,TimeTo45(:,5)/60,'y-.')  %active, shivering
-% plot(air,TimeTo45(:,6)/60,'r-.')  %active, flying
-% %title('Time to reach 50C')
-% xlabel('Air Temperature (C)')
-% ylabel('Time to reach 50C (min)')
-% hold off;
-% %legend('resting','shivering','flying','passive','active','Location','southeast');
-
-% VarNames = {'Temperature' 'Passive - Resting' 'Passive - Flying' 'Active - Resting' 'Active - Flying'};
-% T = table(air.',TimeTo50_min(,1),TimeTo50_min(,3),TimeTo50_min(,4),TimeTo50_min(,6), 'VariableNames',VarNames);
-
-%% Run this for histogram if overplotting onto variability plot
-% ax2 = axes(tplot);  %Create an axes object ax2 by calling the axes function and specifying t as the parent object.
-% h = histogram(equilibria_flying_BB-273.15,'orientation','horizontal');  %establish the histogram plot
-% set(get(h,'Parent'),'xdir','r')   %put it on the other axis
-% ax2.XAxisLocation = 'top'; %Move the x-axis to the top,  
-% ax2.YAxisLocation = 'right';   %and move the y-axis to the right.
-% set(ax2(1),'XTickLabel','');   %but don't actually show the axis labels
-% set(ax2(1),'YTickLabel','');
-% xlim([0,800])  %reset the x-limits
-% ax2.Color = 'none';  %Set the color of the axes object to 'none' so that the underlying plot is visible.
-% ax1.Box = 'off';    %Turn off the plot boxes to prevent the box edges from obscuring the x- and y-axes. 
-% ax2.Box = 'off';
-
-% figure
-% DayTemps=readmatrix('SampleWeatherDay.csv');
-% EquilibTemps = readmatrix('LookupTable_Bumblebee_Active.csv');
-% BeeTemps=EquilibTemps(DayTemps(:,2),3);
-% plot(BeeTemps)
-% title('28 August 2021 (Dublin)')
-% subtitle('Flying Bumblebee')
-% xlabel('Time')
-% ylabel('Equilibrium Thorax Temperature')
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% %plot thorax temp as a function of air temp
-% figure(5) %create a new plot window for the lookup table plot
-% hold on
-% air=0:50;
-% thorax=air;
-% %plines = ['-' '-' '-' '--' '--' '--'];
-% plot(air,Temps(1:56,4),'b')  %active, resting
-% plot(air(17:56),Temps(17:56,6),'r')  %active, flying
-% plot(air,thorax,'k:')
-% ylim([10 45])
-% %title('Thorax temp')
-% xlabel('Air Temperature (C)')
-% ylabel('Equilibrium Thorax Temperature (C)')
-% yline(30);  %30 is the min thorax temp for flight, Heinrich1983
-% lethal = yline(45);   %lethal thorax temp Heinrich1976?ish
-% %CTmax = yline(42);
-% II=area([-5,45],[45 45],42,'EdgeColor', 'none', 'FaceColor', 'r');       
-% alpha(0.1)
-% %fill(42,45, [0.9 0.9 0.9])
-% legend('resting','flying','T_{th} = T_{air}','Location','southeast');
-
+legend('flying','Location','southeast');

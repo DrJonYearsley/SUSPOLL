@@ -1,4 +1,4 @@
-function KeyTemps = RunModelABC(i0_guess, r_guess)
+function KeyTemps = RunModelABC(i0_guess, fs_guess)
 Temps = zeros(51,4); %rows for temperature, colums for resting/shivering/flying
 Temps(:,1) = (0:50).'; %first column is the temperature
 
@@ -37,16 +37,18 @@ C_l = 2.429809*10^(-7);   %fitted from log(Nu) = log(Re), or Nu = C_le^n with CC
 n = 1.975485;       %%fitted from log(Nu) = log(Re), or Nu = C_le^n with CChurch1960 data
 delta_T_h = 2.9;
 T_mK = 42+273.15;     %median temp for  abdomen cooling
-f = 0.9;  %fraction of internal temp at surface
+s = fs_guess;  %fraction of internal temp at surface
+%f = 0.9;  %fraction of internal temp at surface
 
 masses = [0.177 0.177 0.177];   %reference weight for Kammer (flying)
 RefTemps = [25+273.15, 25+273.15, 25+273.15];   %Reference temp is 25C for Kammer (resting & flying)
 %i0 will be provided by fitting algorithm
 
-%r will be provided by fitting algorithm
+%r=r_guess  % will be provided by fitting algorithm
+r = 0.0367/9;  %Calculated from Heinrich1976, 2.2 J/min at T_th-T_abdomen = 9C
 
 for i = 1:51  %go through temps 0 to 50 
-    for j = 1:3    %go through the states (shivering-active; flying-passive; flying-active)
+    for j = 2:3    %go through the states (shivering-active (removed); flying-passive; flying-active)
 % j = 3;     %temporarily do just flying       
 
 metabolic_state=[2 3 3]; %go through each metabolic state
@@ -90,7 +92,7 @@ R2_h = (epsilon_e*A_h*sigma)/(M_th*c);   %thermal radiation out of bee head
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 h  = (C_l*kappa/l_th)*(v*l_th/nu)^n;
-C1 = (h*A_th*f)/(M_th*c);           %thorax, will be multiplied by T_th, *-.9 is for thorax surface temperature
+C1 = (h*A_th*s)/(M_th*c);           %thorax, will be multiplied by T_th, *-.9 is for thorax surface temperature
 C2 = (-h*A_th*T_aK)/(M_th*c);           %thorax
 C1_h = (h*A_h)/(M_th*c);           %head
 C2_h = (-h*A_h*T_aK)/(M_th*c);           %head
@@ -107,7 +109,7 @@ T_ref = RefTemps(metabolic_indicator);
 I = (i0_guess*((M_b/M_ref)^(3/4))*exp((E/(k*T_ref))))*(1/(M_th*c)); %uses i0=I, depends on T_th, relative to ref temp/mass
 
 %%%%%%%%%% Transfer to rest of body %%%%%%%%%%%%%%%
-Ab = r_guess*(1/(M_th*c));   %for heatsink version and both ways version
+Ab = r*(1/(M_th*c));   %for heatsink version and both ways version
 
 
 %%%%%%%%%%%%% Solve ODE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -147,9 +149,9 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %identify when shivering bee goes above 30C
-shiver30 = find(Temps(:,2) >= 30);  %get the array indces where shivering bee temp>=30
-if isempty(shiver30) %if the bee never gets above 30, set temp to 50 as max
-    shiver30Temp = 50;
+shiver30 = find(Temps(:,3) >= 30);  %get the array indces where flying (active model) bee temp>=30
+if isempty(shiver30) %if the bee never gets above 30, set temp to  max
+    shiver30Temp = maxy;
 else
     shiver30Temp = Temps(shiver30(1),1);   %otherwise, get the air temp for the first index in shiver30
 end
