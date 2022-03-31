@@ -1,10 +1,10 @@
-Temps = zeros(51,6); %rows for temperature, colums for resting/shivering/flying
-TimeTo45 = zeros(51,7);
-TimeTo30 = zeros(51,7);
+Temps = zeros(51,9); %rows for temperature, colums for resting/shivering/flying
+TimeTo45 = zeros(51,10);
+TimeTo30 = zeros(51,10);
 solve_TimeTo45 = true;
 solve_TimeTo30 = false;
 
-TimeTo45(:,7)=0:50;  %stick air temp in the last column so I don't have to edit
+TimeTo45(:,10)=0:50;  %stick air temp in the last column so I don't have to edit
 
 %%%%%% Constant values %%%%%%%%
 k = 8.617333262145*10^(-5);   %Bolzmann's constant
@@ -21,8 +21,8 @@ T_gK = T_gC+273.15;        %ground surface temp in K, very vague estimate from h
 a = 0.25;   %fraction of solar radiation from sun reflected back by earth (albedo) (Cooper1985)
 
 %%%%%%%%%%%%%%% Bee Parameters %%%%%%%%%%%%%%%
-%E_opts = [0.63 0.63 0.63];    %Brown2004 activation energy
-E_opts = [0.63 0 0]; 
+E_opts = [0.63 0.63 0.63];    %Brown2004 activation energy
+%E_opts = [0.63 0 0]; 
 
 A_th = 9.3896*10^(-5)  ; %thorax surface area in m^2, from Church1960
 A_h = 2.46*10^(-5)  ; %head surface area in m^2, from Cooper1985 - will need to update this to BB
@@ -34,7 +34,7 @@ M_h = 0.039;  %mass of head in g, Joos1991 (body-thorax-abdomen; need to account
 l_th = 0.005467;   %characteristic dimension of thorax in m (avg thorax diam, from Mitchell1976/Church1960)
 c = 3.349;  %specific heat (0.8 cal/g*degC converted to J/g*degC *4.1868), cited in May1976
 epsilon_a = 0.935;   % absorptivity of bees (Willmer1981, ,te)
-v_options = [0 0 4.1];   %make the bee be out of wind when resting/shivering, default
+v_options = [0 0.1 4.1];   %make the bee be out of wind when resting/shivering, default
 %v_options = [0 0 5.5];   %make the bee be out of wind when resting/shivering, maximum (Osborne2013)
 %v_options = [0 0 1];   %make the bee be out of wind when resting/shivering, minimum (Osborne2013)
 alpha_si = 0.25;     %shape factor for incoming solar radiation (Cooper1985)
@@ -45,12 +45,12 @@ C_l = 2.429809*10^(-7);   %fitted from log(Nu) = log(Re), or Nu = C_le^n with CC
 n = 1.975485;       %%fitted from log(Nu) = log(Re), or Nu = C_le^n with CChurch1960 data
 delta_T_h = 2.9;
 T_mK = 42+273.15;     %median temp for  abdomen cooling
-%s = 0.9;  %fraction of internal temp at surface - default value
-s = 0.95;  %fraction of internal temp at surface - fitted value
+% = 0.9;  %fraction of internal temp at surface - default value
+s = 0.9141875;  %fraction of internal temp at surface - fitted value
 
 I_resting = 0.001349728;     %Kammer1974, table 1, for 25C, converted to W
 %I_flying = 0.06229515;     %Kammer1974, converted to W
-I_flying = 0.02;     %fitted value
+I_flying = 0.0018375;     %fitted value
 %I_flying = 0.2097035;     %Heinrich1975, converted to W
 %masses = [M_b M_b M_b];   %reference weight for Kammer only data is just M_b for now
 %masses = [M_b (0.25+0.60)/2 (0.25+0.60)/2];   %reference weight for Heinrich (flying)
@@ -66,13 +66,15 @@ r = 0.0367/9;  %Calculated from Heinrich1976, 2.2 J/min at T_th-T_abdomen = 9C
 %for i = 1:31
 for i = 1:51  %go through temps 0 to 50 
 %    for j = 1:6
-%    for j = [6]
-    for j = 3:6
+    for j = [1,2,3,7,8,9]   %always off/always on
+%    for j = 4:6    %resting/shivering/flying for physiological switching
+%    model
 %    for j = [1 3 4 6]    %go through the three metabolic states (only passive j=1:3; only active j=4:6)
-% j = 3;     %temporarily do just flying       
+%    for j = 9     %temporarily do just flying       
 
-metabolic_state=[1,2,3,1,2,3]; %go through each metabolic state (1=resting, 2=shivering, 3=flying)
-model_state=[1,1,1,2,2,2]; %1 for physiological, 2 for behavioural
+metabolic_state=[1,2,3,1,2,3,1,2,3]; %go through each metabolic state (1=resting, 2=shivering, 3=flying)
+model_state=[1,1,1,2,2,2,3,3,3]; 
+    %1 for physiological (no abdomen cooling ever), 2 for behavioural (abdomen cooling switches), 3 for abdomen cooling always on
 
 %%%%%%%%%%% Environmental Parameters %%%%%%%%%%%%%%%%
 T_aC = i-1;    %varying air temp
@@ -124,7 +126,7 @@ C2_h = (-h*A_h*T_aK)/(M_th*c);           %head
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 M_ref = masses(metabolic_indicator);
 T_ref = RefTemps(metabolic_indicator);
-norm_constants = [I_resting, I_flying, I_flying];   %resting/thermoregulating/flying = 1,2,3
+norm_constants = [I_resting, I_flying, I_flying];   %resting/shivering/flying = 1,2,3
 i_0 = norm_constants(metabolic_indicator);
 E = E_opts(metabolic_indicator);
 
@@ -167,12 +169,12 @@ y0 = 30+273.15;   %initial temperature of the bee's thorax in K (observed by me!
 
 %solve and plot solution curves separately for passive or active model 
 
-if model_indicator == 1 %passive model
+if model_indicator == 1 %physiological model with abdomen off
 %    figure(1)
     %[t,y] = ode45(@(t,y) heatfluxhead_Tth_active(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k,Ab,T_aK), tspan, y0,Opt); %for use with constant environmental conditions
     %[t,y] = ode45(@(t,y) heatfluxhead_Tth_alwaysactive(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k,Ab,T_aK), tspan, y0); %for use with constant environmental conditions
     %[t,y] = ode45(@(t,y) heatfluxhead_c_active(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,Ab,T_aK),tspan,y0,Opt); %for use with constant environmental conditions
-    [t,y] = ode45(@(t,y) heatfluxhead_Tth_passive(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k), tspan, y0, Opt); %for use with constant environmental conditions
+    [t,y] = ode45(@(t,y) heatfluxhead_BB_CoolingOff(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k), tspan, y0, Opt); %for use with constant environmental conditions
 %    plot(t,y-273.15,'color',pcolors(metabolic_indicator));   %plot in celsius 'k:' creates a black dotted line
     if solve_TimeTo45 == true
         Tmax45=45+273.15;
@@ -186,9 +188,26 @@ if model_indicator == 1 %passive model
         [t30,y30] = ode45(@(t30,y30) heatfluxhead_Tth_passive(t30,y30,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k), tspan, y0, OptT30); %for use with constant environmental conditions
         TimeTo30(i,j) = t30(end);
     end
-else  %active model
+elseif model_indicator == 2 %behavioural model with abdomen switching
 %    figure(2)
     [t,y] = ode45(@(t,y) heatfluxhead_Tth_active(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k,Ab,T_aK,T_mK), tspan, y0,Opt); %for use with constant environmental conditions
+%    plot(t,y-273.15,'color',pcolors(metabolic_indicator));   %plot in celsius 'k:' creates a black dotted line
+%    plot(t,y-273.15,'color',0.7*[1,1,1]);   %plot in celsius 'k:' creates a black dotted line
+    if solve_TimeTo45 == true
+        Tmax45=50+273.15;
+        OptT45=odeset('Events',@(t,y)myEvent(t,y,Tmax45));
+        [t45,y45] = ode45(@(t45,y45) heatfluxhead_Tth_active(t45,y45,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k,Ab,T_aK,T_mK), tspan, y0,OptT45); %for use with constant environmental conditions
+        TimeTo45(i,j) = t45(end);
+    end
+    if solve_TimeTo30 == true
+        Tmax30=30+273.15;
+        OptT30=odeset('Events',@(t,y)myEvent(t,y,Tmax30));
+        [t30,y30] = ode45(@(t30,y30) heatfluxhead_Tth_active(t30,y30,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k,Ab,T_aK,T_mK), tspan, y0,OptT30); %for use with constant environmental conditions
+        TimeTo30(i,j) = t30(end);
+    end
+elseif model_indicator == 3 %behavioural model with abdomen coolingalways on
+%    figure(2)
+    [t,y] = ode45(@(t,y) heatfluxhead_BB_CoolingOn(t,y,S,R1,R2,C1,C2,I,S_h,R1_h,R2_h,C1_h,C2_h,delta_T_h,E,k,Ab,T_aK,T_mK), tspan, y0,Opt); %for use with constant environmental conditions
 %    plot(t,y-273.15,'color',pcolors(metabolic_indicator));   %plot in celsius 'k:' creates a black dotted line
 %    plot(t,y-273.15,'color',0.7*[1,1,1]);   %plot in celsius 'k:' creates a black dotted line
     if solve_TimeTo45 == true
@@ -208,14 +227,14 @@ end
 hold on; 
 
 if length(y)<length(tspan)
-    y((length(y)+1):length(tspan))=50+273.15;   %if it got cut off with T_th>50, fill in the rest of y
+    y((length(y)+1):length(tspan))=maxy;   %if it got cut off with T_th>50, fill in the rest of y
 end
 
 % n_iterations = length(y);
 % last_its = n_iterations-20;
-if max(y) == 50+273.15   %if temp reached 70C, use that
-    Temps_median(i,j) = 50;
-    Temps_mean(i,j) = 50;
+if max(y) == maxy   %if temp reached maximum, use that
+    Temps_median(i,j) = maxy-273.15;
+    Temps_mean(i,j) = maxy-273.15;
 else  %otherwise, take the mean/median of the end
 Temps_median(i,j) = median(y(1000:length(tspan)))-273.15;     %median instead of mean should be more stable against cycles
 Temps_mean(i,j) = mean(y(1000:length(tspan)))-273.15;     %median instead of mean should be more stable against cycles
@@ -264,13 +283,16 @@ hold on
 air=0:50;
 thorax=air;
 %plines = ['-' '-' '-' '--' '--' '--'];
-%plot(air,Temps_median(:,1),'b-')  %passive, resting
-%plot(air,Temps_median(:,2),'y-')  %passive, shivering
-%plot(air,Temps_median(:,3),'r-')  %passive, flying
-plot(air,Temps_median(:,4),'b-')  %active, resting (-. for dash-dotted line)
-plot(air,Temps_median(:,5),'y-')  %active, shivering
-plot(air(13:51),Temps_median(13:51,6),'r-')  %active, flying
-ylim([20,45])
+ plot(air,Temps_median(:,1),'b-')  %cooling off, resting
+ plot(air,Temps_median(:,2),'y')  %cooling off, shivering
+ plot(air,Temps_median(:,3),'r')  %cooling off, flying
+% plot(air,Temps_median(:,4),'b-')  %physiological (cooling switching), resting (-. for dash-dotted line)
+% plot(air,Temps_median(:,5),'y-')  %physiological (cooling switching), shivering
+% plot(air,Temps_median(:,6),'r-')  %physiological (cooling switching), flying
+ plot(air,Temps_median(:,7),'b--')  %cooling on, resting (-. for dash-dotted line)
+ plot(air,Temps_median(:,8),'y--')  %cooling on, shivering
+ plot(air,Temps_median(:,9),'r--')  %cooling on, flying
+%ylim([20,45])
 %plot(air,thorax,'k:')
 % title('Thorax temp - median')
 xlabel('Air Temperature (C)')
@@ -284,7 +306,8 @@ fill(42,45, [0.9 0.9 0.9])
 %hold off;
 %legend('resting','flying','environmental','behavioural','T_{th} = T_{air}','Location','southeast');
 %legend('resting, physiological','flying, physiological','resting, behavioural','flying, behavioural','T_{th} = T_{air}','Location','southeast');
-legend('resting','shivering','flying','Location','southeast');
+%legend('resting','shivering','flying','Location','southeast');
+legend('cooling always off','cooling always on','Location','southeast');
 
 
 % %plot thorax temp as a function of air temp with range due to M_b
