@@ -56,6 +56,7 @@ k1=1
 T_th_0=42
 T_th_1=45
 r = 0.0367
+r = 0.0367/9
 r = 0.0367/20
 #curve((x-T_air)*(r/(1+exp(-3*(x - 43))) ),from=30,to=60,ylab="rate of heat flow (Q_ab)",xlab="thorax temperature")
 plot(0,0,ylim=c(-0.02,0.107),xlim=c(30,60),ylab="rate of heat flow (Q_ab)",xlab="thorax temperature")
@@ -76,9 +77,53 @@ for(T_air in seq(0,50,5)){
 }
 
 #Tairs with T_th-T_air (proxy for ab)
-plot(0,0,ylim=c(0,2.5),xlim=c(35,60),ylab="rate of heat flow (Q_ab)",xlab="thorax temperature")
 j=1
+r = 0.0367/9
+k=0.0005  #y-axis shift
+L = r
+plot(0,0,ylim=c(-0.05,0.23),xlim=c(39,50),ylab="rate of heat flow (Q_ab)",xlab="thorax temperature")
 for(T_air in seq(0,50,5)){
-  curve((x-T_air)*r*( (1-(T_air/50))/(1+exp(-3*(x - 43))) ),from=35,to=60,add=TRUE,col=j)
+#  curve(((L)/(1+exp(-2*(x - 43)))) + k,from=35,to=60,add=TRUE,col=j)
+#  curve((x-T_air)*2*r*( (1)/(1+exp(-2*(x - 43)))) + r*(x-T_air),from=35,to=60,add=TRUE,col=j)
+  curve(r*(x-T_air)*( (1)/(1+exp(-4*(x - 43))) ),from=39,to=50,add=TRUE,col=j)
+  curve(r*(x-T_air),from=39,to=50,add=TRUE,col=j,lty="dotted")
+  #  points(T_air-9,0.3,col=j,pch=20)
   j=j+1
 }
+abline(v=43)
+#T_th-T_air = 9  ->  x = T_air-9
+
+
+
+
+#kappa as fn of T_air
+T_aK = (0:50)+273.15
+kappa = (0.02646*T_aK^1.5)/(T_aK+245.4*10^(-12/T_aK))
+plot(T_aK,kappa)
+
+mu = (1.458*10^(-6)*T_aK^1.5)/(T_aK+110.4) #dynamic viscosity of air 
+rho = 1.2256 #in dry air air at sea level at 15C
+nu = mu/rho #kinematic viscosity %The Shock Absorber Handbook
+
+C_l = 2.429809*10^(-7)
+l_th =  0.005467 
+v = 4.1
+n = 1.975485
+  
+h  = (C_l*kappa/l_th)*(v*l_th/nu)^n
+
+
+M_b = 0.149
+M_ref=0.177
+E=0.63
+k=1.3806*10^(-23)
+T_
+I = (i_0*((M_b/M_ref)^(3/4))*exp((E/(k*T_ref))))
+
+
+
+
+
+
+
+

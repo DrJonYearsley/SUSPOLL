@@ -9,59 +9,59 @@ library(dismo)
 library(gbm)
 
 interaction_level = 2   #level of interactions to consider in the BRT fitting (tree complexity)
-n_params_resting = 23 #24 because only using one i0 param and not v and not s
-n_params_shivering = 23 #24 because only using one i0 param and not v and not s
-n_params_flying = 24 #24 because only using one i0 param and not s
+n_params_resting = 23 #23 because only using one i0 param and not v or E
+n_params_shivering = 23 #23 because only using one i0 param and not v or E
+n_params_flying = 24 #24 because only using one i0 param and not E
 
 ### Read in the data for parameter samples and hear flux ###
 
-Parameter_Values = read.csv(file="ParameterSample_BB_10000_combined.csv")
-Parameter_Values_resting = Parameter_Values[,c(-1,-4,-21,-25)]  #remove the flying i0 and v and s
-Parameter_Values_shivering = Parameter_Values[,c(-1,-3,-21,-25)]  #remove the resting i0 and v and s
-Parameter_Values_flying = Parameter_Values[,c(-1,-3,-21)]  #remove the resting i0 and s
-colnames(Parameter_Values_resting) = c('delta_T_h','i0','M_b','E','M_th',
+Parameter_Values = read.csv(file="ParameterSample_BB_10000_lowi0.csv")
+Parameter_Values_resting = Parameter_Values[,c(-1,-4,-5,-25)]  #remove the flying i0 and v
+Parameter_Values_shivering = Parameter_Values[,c(-1,-3,-5,-25)]  #remove the resting i0 and v
+Parameter_Values_flying = Parameter_Values[,c(-1,-3,-5)]  #remove the resting i0
+colnames(Parameter_Values_resting) = c('delta_T_h','i0','M_b','M_th',
                                        'c','r','T_mK','alpha_si','epsilon_a','A_th','A_h',
                                        'alpha_s0','alpha_th','a','P','T_gC','T_aC','epsilon_e',
-                                       'c_l','n','l_th','T_0')
-colnames(Parameter_Values_shivering) = c('delta_T_h','i0','M_b','E','M_th',
+                                       'f_s','c_l','n','l_th','T_0')
+colnames(Parameter_Values_shivering) = c('delta_T_h','i0','M_b','M_th',
                                          'c','r','T_mK','alpha_si','epsilon_a','A_th','A_h',
                                          'alpha_s0','alpha_th','a','P','T_gC','T_aC','epsilon_e',
-                                         'c_l','n','l_th','T_0')
-colnames(Parameter_Values_flying) = c('delta_T_h','i0','M_b','E','M_th',
+                                         'f_s','c_l','n','l_th','T_0')
+colnames(Parameter_Values_flying) = c('delta_T_h','i0','M_b','M_th',
                                       'c','r','T_mK','alpha_si','epsilon_a','A_th','A_h',
                                       'alpha_s0','alpha_th','a','P','T_gC','T_aC','epsilon_e',
-                                      'c_l','n','l_th','v','T_0')
+                                      'f_s','c_l','n','l_th','v','T_0')
 
 
 
-Equilibria_resting = read.csv(file="BB_Thorax_Equilibria_Variability_resting_combined_10000.csv",header=FALSE)
-Equilibria_shivering = read.csv(file="BB_Thorax_Equilibria_Variability_shivering_combined_10000.csv",header=FALSE)
-Equilibria_flying = read.csv(file="BB_Thorax_Equilibria_Variability_flying_combined_10000.csv",header=FALSE)
+Equilibria_resting = read.csv(file="BB_Thorax_Equilibria_Variability_resting_case4_10000.csv",header=FALSE)
+Equilibria_shivering = read.csv(file="BB_Thorax_Equilibria_Variability_shivering_case4_10000.csv",header=FALSE)
+Equilibria_flying = read.csv(file="BB_Thorax_Equilibria_Variability_flying_case4_10000.csv",header=FALSE)
 
 
 reg_data_equilibria_resting = cbind(Equilibria_resting,Parameter_Values_resting)
 reg_data_equilibria_shivering = cbind(Equilibria_resting,Parameter_Values_shivering)
 reg_data_equilibria_flying = cbind(Equilibria_flying,Parameter_Values_flying)
-colnames(reg_data_equilibria_resting) = c('equilibria','delta_T_h','i0','M_b','E','M_th',
+colnames(reg_data_equilibria_resting) = c('equilibria','delta_T_h','i0','M_b','M_th',
                                           'c','r','T_mK','alpha_si','epsilon_a','A_th','A_h',
                                           'alpha_s0','alpha_th','a','P','T_gC','T_aC','epsilon_e',
-                                          'c_l','n','l_th','T_0')
-colnames(reg_data_equilibria_shivering) = c('equilibria','delta_T_h','i0','M_b','E','M_th',
+                                          'f_s','c_l','n','l_th','T_0')
+colnames(reg_data_equilibria_shivering) = c('equilibria','delta_T_h','i0','M_b','M_th',
                                             'c','r','T_mK','alpha_si','epsilon_a','A_th','A_h',
                                             'alpha_s0','alpha_th','a','P','T_gC','T_aC','epsilon_e',
-                                            'c_l','n','l_th','T_0')
-colnames(reg_data_equilibria_flying) = c('equilibria','delta_T_h','i0','M_b','E','M_th',
+                                            'f_s','c_l','n','l_th','T_0')
+colnames(reg_data_equilibria_flying) = c('equilibria','delta_T_h','i0','M_b','M_th',
                                          'c','r','T_mK','alpha_si','epsilon_a','A_th','A_h',
                                          'alpha_s0','alpha_th','a','P','T_gC','T_aC','epsilon_e',
-                                         'c_l','n','l_th','v','T_0')
+                                         'f_s','c_l','n','l_th','v','T_0')
 reg_data_equilibria_resting_edited = na.omit(reg_data_equilibria_resting)
 reg_data_equilibria_shivering_edited = na.omit(reg_data_equilibria_shivering)
 reg_data_equilibria_flying_edited = na.omit(reg_data_equilibria_flying)
 
 par(mfrow=c(3,1))
-# hist(reg_data_equilibria_resting_edited[ ,1], main='equilibrium thorax temps while resting',xlab='temperature')
-# hist(reg_data_equilibria_shivering_edited[ ,1], main='equilibrium thorax temps while shivering',xlab='temperature')
-# hist(reg_data_equilibria_flying_edited[ ,1], main='equilibrium thorax temps while flying',xlab='temperature')
+hist(reg_data_equilibria_resting_edited[ ,1], main='equilibrium thorax temps while resting',xlab='temperature')
+hist(reg_data_equilibria_shivering_edited[ ,1], main='equilibrium thorax temps while shivering',xlab='temperature')
+hist(reg_data_equilibria_flying_edited[ ,1], main='equilibrium thorax temps while flying',xlab='temperature')
 
 maxouts_resting=which(reg_data_equilibria_resting_edited[ ,1]==100)
 maxouts_shivering=which(reg_data_equilibria_shivering_edited[ ,1]==100)
@@ -104,21 +104,20 @@ BRT_equilibria_flying = gbm.step(data=reg_data_equilibria_flying_edited,gbm.x=2:
 flying_contributions = BRT_equilibria_flying$contributions      #the influence of each parameter
 flying_R2 = BRT_equilibria_flying$cv.statistics$correlation.mean^2 #might be the R^2 value... 
 
+
 resting_contributions
 shivering_contributions
 flying_contributions
 
-write.csv(resting_contributions,file="combined_contributions_resting_bumblebee.csv")
-write.csv(shivering_contributions,file="combined_contributions_shivering_bumblebee.csv")
-write.csv(flying_contributions,file="combined_contributions_flying_bumblebee.csv")
+write.csv(resting_contributions,file="case4_resting_contributions.csv")
+write.csv(shivering_contributions,file="case4_resting_contributions.csv")
+write.csv(flying_contributions,file="case4_resting_contributions.csv")
 
 resting_R2
 shivering_R2
 flying_R2
 
-write.csv(c(resting_R2,shivering_R2,flying_R2),file="combined_R2_values_bumblebee.csv")
-
-
+write.csv(c(resting_R2,shivering_R2,flying_R2),file="case4_R2_values.csv")
 
 # Interactions_equilibria_resting = gbm.interactions(BRT_equilibria_resting)
 # interactions_resting = Interactions_equilibria_resting$interactions
@@ -169,10 +168,6 @@ reg_data_equilibria_flying_edited_1000 = reg_data_equilibria_flying_edited[sampl
 BRT_flying_1000 = gbm.step(data=reg_data_equilibria_flying_edited_1000,gbm.x=2:(n_params_flying+1),gbm.y=1,learning.rate=0.01, bag.fraction=0.75, tree.complexity = interaction_level, n.folds=10, family="gaussian")
 Influences_flying_1000 = BRT_flying_1000$contributions[,2]      #the influence of each parameter
 
-write.csv(Influences_resting_1000,file="combined_Influences_resting_1000_bumblebee.csv")
-write.csv(Influences_shivering_1000,file="combined_Influences_shivering_1000_bumblebee.csv")
-write.csv(Influences_flying_1000,file="combined_Influences_flying_1000_bumblebee.csv")
-
 
 
 
@@ -188,9 +183,6 @@ reg_data_equilibria_flying_edited_2500 = reg_data_equilibria_flying_edited[sampl
 BRT_flying_2500 = gbm.step(data=reg_data_equilibria_flying_edited_2500,gbm.x=2:(n_params_flying+1),gbm.y=1,learning.rate=0.01, bag.fraction=0.75, tree.complexity = interaction_level, n.folds=10, family="gaussian")
 Influences_flying_2500 = BRT_flying_2500$contributions[,2]      #the influence of each parameter
 
-write.csv(Influences_resting_2500,file="combined_Influences_resting_2500_bumblebee.csv")
-write.csv(Influences_shivering_2500,file="combined_Influences_shivering_2500_bumblebee.csv")
-write.csv(Influences_flying_2500,file="combined_Influences_flying_2500_bumblebee.csv")
 
 
 
@@ -206,9 +198,6 @@ reg_data_equilibria_flying_edited_5000 = reg_data_equilibria_flying_edited[sampl
 BRT_flying_5000 = gbm.step(data=reg_data_equilibria_flying_edited_5000,gbm.x=2:(n_params_flying+1),gbm.y=1,learning.rate=0.01, bag.fraction=0.75, tree.complexity = interaction_level, n.folds=10, family="gaussian")
 Influences_flying_5000 = BRT_flying_5000$contributions[,2]      #the influence of each parameter
 
-write.csv(Influences_resting_5000,file="combined_Influences_resting_5000_bumblebee.csv")
-write.csv(Influences_shivering_5000,file="combined_Influences_shivering_5000_bumblebee.csv")
-write.csv(Influences_flying_5000,file="combined_Influences_flying_5000_bumblebee.csv")
 
 
 
@@ -224,9 +213,6 @@ reg_data_equilibria_flying_edited_7500 = reg_data_equilibria_flying_edited[sampl
 BRT_flying_7500 = gbm.step(data=reg_data_equilibria_flying_edited_7500,gbm.x=2:(n_params_flying+1),gbm.y=1,learning.rate=0.01, bag.fraction=0.75, tree.complexity = interaction_level, n.folds=10, family="gaussian")
 Influences_flying_7500 = BRT_flying_7500$contributions[,2]      #the influence of each parameter
 
-write.csv(Influences_resting_7500,file="combined_Influences_resting_7500_bumblebee.csv")
-write.csv(Influences_shivering_7500,file="combined_Influences_shivering_7500_bumblebee.csv")
-write.csv(Influences_flying_7500,file="combined_Influences_flying_7500_bumblebee.csv")
 
 
 
@@ -234,15 +220,12 @@ Influences_resting_10000 = BRT_equilibria_resting$contributions[,2]
 Influences_shivering_10000 = BRT_equilibria_shivering$contributions[,2]
 Influences_flying_10000 = BRT_equilibria_flying$contributions[,2]
 
-write.csv(Influences_resting_10000,file="combined_Influences_resting_10000_bumblebee.csv")
-write.csv(Influences_shivering_10000,file="combined_Influences_shivering_10000_bumblebee.csv")
-write.csv(Influences_flying_10000,file="combined_Influences_flying_10000_bumblebee.csv")
 
 
 
 
 
-# For 1000-2500
+# For 100-250
 Average_Influences_resting_1000_2500 = apply(cbind(Influences_resting_1000,Influences_resting_2500),1,mean)
 Inner_sum_1000 = sum(Influences_resting_1000*log(Influences_resting_1000)/2,na.rm=TRUE)
 Inner_sum_2500 = sum(Influences_resting_2500*log(Influences_resting_2500)/2,na.rm=TRUE)
@@ -258,7 +241,7 @@ Inner_sum_1000 = sum(Influences_flying_1000*log(Influences_flying_1000)/2,na.rm=
 Inner_sum_2500 = sum(Influences_flying_2500*log(Influences_flying_2500)/2,na.rm=TRUE)
 D_flying_1000_2500 = Inner_sum_1000+Inner_sum_2500 - sum(Average_Influences_flying_1000_2500*log(Average_Influences_flying_1000_2500),na.rm=TRUE)
 
-# For 2500-5000
+# For 250-500
 Average_Influences_resting_2500_5000 = apply(cbind(Influences_resting_2500,Influences_resting_5000),1,mean)
 Inner_sum_2500 = sum(Influences_resting_2500*log(Influences_resting_2500)/2,na.rm=TRUE)
 Inner_sum_5000 = sum(Influences_resting_5000*log(Influences_resting_5000)/2,na.rm=TRUE)
@@ -274,7 +257,7 @@ Inner_sum_2500 = sum(Influences_flying_2500*log(Influences_flying_2500)/2,na.rm=
 Inner_sum_5000 = sum(Influences_flying_5000*log(Influences_flying_5000)/2,na.rm=TRUE)
 D_flying_2500_5000 = Inner_sum_2500+Inner_sum_5000 - sum(Average_Influences_flying_2500_5000*log(Average_Influences_flying_2500_5000),na.rm=TRUE)
 
-# For 5000-7500 
+# For 500-750 
 Average_Influences_resting_5000_7500 = apply(cbind(Influences_resting_5000,Influences_resting_7500),1,mean)
 Inner_sum_5000 = sum(Influences_resting_5000*log(Influences_resting_5000)/2,na.rm=TRUE)
 Inner_sum_7500 = sum(Influences_resting_7500*log(Influences_resting_7500)/2,na.rm=TRUE)
@@ -312,10 +295,16 @@ D_resting = exp(c(D_resting_1000_2500,D_resting_2500_5000,D_resting_5000_7500,D_
 D_shivering = exp(c(D_shivering_1000_2500,D_shivering_2500_5000,D_shivering_5000_7500,D_shivering_7500_10000))
 D_flying = exp(c(D_flying_1000_2500,D_flying_2500_5000,D_flying_5000_7500,D_flying_7500_10000))
 
-write.csv(cbind(D_resting,D_shivering,D_flying),file="combined_D_values_bumblebee.csv")
+# logD_resting = (c(D_resting_1000_2500,D_resting_2500_5000,D_resting_5000_7500,D_resting_7500_10000))
+# logD_shivering = (c(D_shivering_1000_2500,D_shivering_2500_5000,D_shivering_5000_7500,D_shivering_7500_10000))
+# logD_flying = (c(D_flying_1000_250,D_flying_2500_500,D_flying_5000_750,D_flying_750_10000))
 
 par(mfrow=c(3,1))
-plot(D_resting,main="Resting Bee Case 1",type='b')
-plot(D_shivering, main="Shivering Bee Case 1",type='b')
-plot(D_flying, main="Flying Bee Case 1",type='b')
+plot(D_resting,main="Resting Bee Case 4",type='b')
+plot(D_shivering, main="Shivering Bee Case 4",type='b')
+plot(D_flying, main="Flying Bee Case 4",type='b')
+
+# plot(logD_resting,main="Resting Bee Case 4",type='b')
+# plot(logD_shivering, main="Shivering Bee Case 4",type='b')
+# plot(logD_flying, main="Flying Bee Case 4",type='b')
 

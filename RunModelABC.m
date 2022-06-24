@@ -1,4 +1,4 @@
-function KeyTemps = RunModelABC(i0_guess, fs_guess)
+function KeyTemps = RunModelABC(P1_guess, P2_guess)
 Temps = zeros(51,4); %rows for temperature, colums for resting/shivering/flying
 Temps(:,1) = (0:50).'; %first column is the temperature
 
@@ -17,7 +17,7 @@ T_gK = T_gC+273.15;        %ground surface temp in K, very vague estimate from h
 a = 0.25;   %fraction of solar radiation from sun reflected back by earth (albedo) (Cooper1985)
 
 %%%%%%%%%%%%%%% Bee Parameters %%%%%%%%%%%%%%%
-E = 0.63;    %Brown2004 activation energy
+E = P2_guess;    %Brown2004 activation energy
 %E = 0; 
 
 A_th = 9.3896*10^(-5)  ; %thorax surface area in m^2, from Church1960
@@ -37,8 +37,7 @@ C_l = 2.429809*10^(-7);   %fitted from log(Nu) = log(Re), or Nu = C_le^n with CC
 n = 1.975485;       %%fitted from log(Nu) = log(Re), or Nu = C_le^n with CChurch1960 data
 delta_T_h = 2.9;
 T_mK = 42+273.15;     %median temp for  abdomen cooling
-s = fs_guess;  %fraction of internal temp at surface
-%f = 0.9;  %fraction of internal temp at surface
+s = 0.9141875;  %fraction of internal temp at surface
 
 masses = [0.177 0.177 0.177];   %reference weight for Kammer (flying)
 RefTemps = [25+273.15, 25+273.15, 25+273.15];   %Reference temp is 25C for Kammer (resting & flying)
@@ -106,7 +105,7 @@ M_ref = masses(metabolic_indicator);
 T_ref = RefTemps(metabolic_indicator);
 
 
-I = (i0_guess*((M_b/M_ref)^(3/4))*exp((E/(k*T_ref))))*(1/(M_th*c)); %uses i0=I, depends on T_th, relative to ref temp/mass
+I = (P1_guess*((M_b/M_ref)^(3/4))*exp((E/(k*T_ref))))*(1/(M_th*c)); %uses i0=I, depends on T_th, relative to ref temp/mass
 
 %%%%%%%%%% Transfer to rest of body %%%%%%%%%%%%%%%
 Ab = r*(1/(M_th*c));   %for heatsink version and both ways version
