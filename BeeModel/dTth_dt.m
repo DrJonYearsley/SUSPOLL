@@ -9,22 +9,14 @@ function out = dTth_dt(~, Tth, params)
 
 
 % Define parameters required for each term
-param_I = struct('k',params.k, ...
-    'E', params.E, ...
-    'M_b',params.M_b, ...
-    'M_ref',params.M_ref, ...
-    'T_ref',params.T_ref, ...
-    'i0', params.i0_rest);
+param_I = params;
+% Update reference metabolic rate for resting
+param_I.i0 = params.i0_rest;
 
-param_S = ;
-param_L = ;
-param_H = struct('k',params.k, ...
-    'A_h', bee.A_h, ...
-    );
-param_R = ;
-param_C = ;
-param_ab = ;
 
+param_H = params;
+% Update surface area for the head
+param_H.A_th = params.A_h;
 
 % Thorax metabolic heat gain (anonymous function)
 Q_I = @(Tth, P) {P.i0 (P.M_b/P.M_ref)^3/4 * exp(-P.E/P.k *(1/Tth - 1/P.T_ref))};
@@ -32,22 +24,29 @@ Q_I = @(Tth, P) {P.i0 (P.M_b/P.M_ref)^3/4 * exp(-P.E/P.k *(1/Tth - 1/P.T_ref))};
 % Heat lost to abdomen (behaviour for bumblebees)
 Q_ab =  @(Tth, P) {P.active * P.r0 * (Tth - P.T_air)};
 
+% Heat gain from longwave radiation (i.e. atmosphere)
+Q_L = @(Tth, P) {P.alpha_np * P.A_th * P.epsilon_a * ...
+    (P.sigma * P.Tg^4 + P.delta*P.Tair^6)};
+
+% Radiative heat loss
+Q_R = @(Tth, P) {P.epsilon_e * P.A_th * P.sigma * Tth^4};
+
+
+% Head rate of heat gain (assuming head is in thermal equilibrium with the thorax)
+Q_H = @(T_head, P) {Q_S(T_head, P) + Q_L(T_head, P) - ...
+    Q_R(T_head, P) -  Q_C(T_head, P) - Q_N(T_head, P)};
+
+
 
 % Rate of change of thorax temperature
-dTth_dt = 1/ params.M_th / params.c * (Q_S(Tth, params) + Q_L(Tth, params) + ...
+out = 1/ params.M_th / params.c * (Q_S(Tth, params) + Q_L(Tth, params) + ...
     Q_I(Tth, params) + Q_H(Tth-bee1.delta_Th, param_H) - ...
     Q_R(Tth, params) - Q_C(Tth, params) - Q_ab(Tth, params));
 
 
 
 
-%% Head rate of heat gain (assuming head is in thermal equilibrium with the thorax)
-function qh = Q_H(T_head)
 
-
-qh = Q_S(T_head, param_S) + Q_L(T_head, param_L) - ...
-    Q_R(T_head, param_R) -  Q_C(T_head, param_C) - ...
-    Q_N(T_head, param_N);
 
 
 
@@ -60,14 +59,6 @@ function qc = Q_C(Tth, P)
 
 qc = 
 
-%% Radiative heat loss
-function qr = Q_R(Tth, P)
-
-qr = param_R.epsilon_e * param_R.A_th * param_R.sigma * Tth^4;
-
-%% Heat gain from longwave radiation (i.e. atmosphere)
-Q_L = param_L.alpha_np * param_L.A_th * param_L.epsilon_a * ...
-    (param_L.sigma * param_L.Tg^4 + param_L.delta*param_L.Tair^6);
 
 
 % Heat gain from shortwave radiation (i.e. solar radiation, direct and reflected)
