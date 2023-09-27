@@ -1,4 +1,4 @@
-function out = set_parameters(species, metabolism, cooling, behaviour, crop)
+function out = set_parameters(species, cooling, behaviour, crop)
 % Set the parameters for the bee thermodynamic model
 %
 % Jon Yearsley and Sarah MacQueen
@@ -9,10 +9,6 @@ function out = set_parameters(species, metabolism, cooling, behaviour, crop)
 % Check the input arguments
 if species~= "honeybee" && species~="bumblebee"
     error("Species must be either bumblebee or honeybee")
-end
-
-if metabolism~= "resting" && metabolism~="active"
-    error("Metabolism must be either resting or active")
 end
 
 if cooling~= "none" && cooling~="head" && cooling~="abdomen"
@@ -29,7 +25,7 @@ phys = struct('k',8.617333262145*10^(-5),...   % Boltzmann's constant
     'A', 9.1496e10, ...           % clausius-clapyron constant A for water in N/m^2 (Sidebottom 2015)
     'B', -5.1152e3, ...           % clausius-clapyron constant B for water in K  (Sidebottom 2015)
     'kappa',0.02534, ...          % thermal conductivity of air
-    'h_fg', 2.33e6, ...           % latent heat of vaporization of water, J/kg 
+    'h_fg', 2.3819e6, ...           % latent heat of vaporization of water, J/kg 
     'MM_air', 0.0289652, ...      % molar mass of dry air in kg/mol
     'MM_vapor', 0.018016);        % molar mass of water vapor in kg/mol
 
@@ -43,8 +39,7 @@ phys = struct('k',8.617333262145*10^(-5),...   % Boltzmann's constant
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Define structure with parameters for the environment
 env = struct('P', 332.3878, ... % mean solar irradiance from all of Arrian's data
-    'T_gK',17.1 + 273.15, ...   % ground surface temp in K
-    'T_air', 25 + 273.15, ...   % Air temperature (K)
+    'T_air', 19 + 273.15, ...   % Air temperature (K)
     'T_g', 17.1 + 273.15, ...   % Ground temperature (K)
     'Pr', 1.013e5,...           % atmospheric pressure in N/m^2 (value used in Sidebotham)
     'f', 0.25, ...              % fraction of solar radiation from sun reflected back by earth (albedo/ground reflectance)
@@ -83,7 +78,7 @@ end
 
 %%%%%% Forage Patch values (needed in Set_Rates)
 bee.distance_to_patch = 100;   %distance to patch in m
-bee. t_bout = 3600;            % (s) 60 min bout default for now
+bee.t_bout = 3600;             % (s) 60 min bout default for now
 
 % t_forage = t_bout - 2*t_0;   %time available for foraging
 % flowervisits_max = floor((t_forage-t_handling)/(t_handling + t_flybetween));   %number of flowers possible to visit
@@ -110,26 +105,25 @@ bee. t_bout = 3600;            % (s) 60 min bout default for now
 bumblebee.A_th = 9.3896e-5;             % thorax surface area in m^2, from Church1960
 bumblebee.A_h = 3.61375e-5;             % head surface area in m^2, from Cooper1985 - will need to update this to BB
 
-if metabolism=="active"
-    if behaviour=="flying"
-      bumblebee.i0 =  0.06404973;        % reference active metabolic rate (fitted) (J/s)
-      bumblebee.E = 0.009176471*phys.e;  % activation energy (fitted) (J)
-      bumblebee.v = 4.1;                 % flight speed (m / s) (could be wind speed too)
-    elseif behaviour=="shivering"
-      bumblebee.i0 =  0.06404973;        % reference active metabolic rate (fitted) (J/s)
-      bumblebee.E = 0.009176471*phys.e;  % activation energy (fitted) (J)
-      bumblebee.v = 0;                   % bee is out of wind
-    elseif behaviour=="onflower"
-      bumblebee.i0 =  0.06404973 * bee.D_fl + 0.001349728 *(1-bee.D_fl); % (J/s)
-      bumblebee.E = (0.63 * bee.D_fl + 0.009176471 * (1-bee.D_fl))*phys.e;         % activation energy (fitted) (J)
-      bumblebee.v = 0;                 % flight speed (m / s) (could be wind speed too)
-    else
-        error("behaviour not recognised for a metabolically active bumblebee")
-    end
-else
+
+if behaviour=="flying"
+    bumblebee.i0 =  0.06404973;        % reference active metabolic rate (fitted) (J/s)
+    bumblebee.E = 0.009176471*phys.e;  % activation energy (fitted) (J)
+    bumblebee.v = 4.1;                 % flight speed (m / s) (could be wind speed too)
+elseif behaviour=="shivering"
+    bumblebee.i0 =  0.06404973;        % reference active metabolic rate (fitted) (J/s)
+    bumblebee.E = 0.009176471*phys.e;  % activation energy (fitted) (J)
+    bumblebee.v = 0;                   % bee is out of wind
+elseif behaviour=="onflower"
+    bumblebee.i0 =  0.06404973 * bee.D_fl + 0.001349728 *(1-bee.D_fl); % (J/s)
+    bumblebee.E = (0.63 * bee.D_fl + 0.009176471 * (1-bee.D_fl))*phys.e;         % activation energy (fitted) (J)
+    bumblebee.v = 0;                 % flight speed (m / s) (could be wind speed too)
+elseif behaviour=="resting"
     bumblebee.i0 =  0.001349728;       % reference resting metabolic rate (J/s) Kammer & Heinrich 1974 (table 1)
     bumblebee.E = 0.63*phys.e;         % activation energy (fitted) (J)
     bumblebee.v = 0;                   % bee is out of wind
+else
+    error("behaviour not recognised for a metabolically active bumblebee")
 end
 
 
@@ -143,7 +137,8 @@ bumblebee.epsilon_a = 0.935;       % absorptivity of bees (Willmer1981, ,te)
 bumblebee.epsilon_e = 0.97;       % emmisivity of bee
 bumblebee.T_mK = 42+273.15;       % median temp for  abdomen cooling (K)
 bumblebee.T_ref = 25+273.15;  % Reference temp is 25C for Kammer (resting & flying)
-bumblebee.r0 = 0.004;         % rate of heat transfer to abdomen J/s/◦C
+bumblebee.r0 = 0.0367/9;      % rate of heat transfer to abdomen J/s/K
+                              % Calculated from Heinrich1976, 2.2 J/min at T_th-T_abdomen = 9C
 bumblebee.R_0 = 0.00;         % radius of nectar droplet (m)
 bumblebee.LethalTemp = 45;    %lethal thorax/air temp (C)
 bumblebee.CoolingTemp = 42;   %thorax temp where cooling begins (C)
@@ -169,8 +164,8 @@ end
 % Define structure with parameters for a honeybee
 
 
-honeybee.A_th = 4.5*10^(-5)  ;     % thorax surface area in m^2, from ???
-honeybee.A_h = 2.46*10^(-5)  ;     % head surface area in m^2, from Cooper1985 
+honeybee.A_th = 4.5e-5;            % thorax surface area in m^2, from ???
+honeybee.A_h = 2.46e-5;            % head surface area in m^2, from Cooper1985 
 
 if metabolism=="active"
     honeybee.i0 = 0.0335;          % reference active metabolic rate (fitted) (J/s)
@@ -179,28 +174,28 @@ else
 end
 honeybee.E = 0.008*phys.e;         % activation energy (fitted) (J)
 
-if metabolism=="active"
-    if behaviour=="flying"
-      honeybee.i0 =   0.034027;        % reference active metabolic rate (fitted) (J/s)
-      honeybee.E = 0.008*phys.e;         % activation energy (fitted) (J)
-      honeybee.v = 5.6;                 % flight speed (m / s) (could be wind speed too)
-    elseif behaviour=="shivering"
-      honeybee.i0 =   0.034027;        % reference active metabolic rate (fitted) (J/s)
-      honeybee.E = 0.008*phys.e;         % activation energy (fitted) (J)
-      honeybee.v = 0;                   % bee is out of wind
-    elseif behaviour=="onflower"
-      honeybee.i0 =   0.034027 * bee.D_fl + 5.65e-3*(80/1000)* (1-bee.D_fl); % (J/s)
-      honeybee.E = (0.008 * bee.D_fl + 0.63* (1-bee.D_fl))*phys.e;         % activation energy (fitted) (J)
-      honeybee.v = 0;                 % flight speed (m / s) (could be wind speed too)
-    else
-        error("behaviour not recognised for a metabolically active bumblebee")
-    end
-else
+
+if behaviour=="flying"
+    honeybee.i0 =   0.034027;        % reference active metabolic rate (fitted) (J/s)
+    honeybee.E = 0.008*phys.e;         % activation energy (fitted) (J)
+    honeybee.v = 5.6;                 % flight speed (m / s) (could be wind speed too)
+elseif behaviour=="shivering"
+    honeybee.i0 =   0.034027;        % reference active metabolic rate (fitted) (J/s)
+    honeybee.E = 0.008*phys.e;         % activation energy (fitted) (J)
+    honeybee.v = 0;                   % bee is out of wind
+elseif behaviour=="onflower"
+    honeybee.i0 =   0.034027 * bee.D_fl + 5.65e-3*(80/1000)* (1-bee.D_fl); % (J/s)
+    honeybee.E = (0.008 * bee.D_fl + 0.63* (1-bee.D_fl))*phys.e;         % activation energy (fitted) (J)
+    honeybee.v = 0;                 % flight speed (m / s) (could be wind speed too)
+elseif behaviour=="resting"
     % i0 from Rothe1989, mW/g -> W, 80mg reference mass
     honeybee.i0 = 5.65e-3*(80/1000);  % reference resting metabolic rate (J/s)
     honeybee.E = 0.63*phys.e;         % activation energy (fitted) (J)
     honeybee.v = 0;                   % bee is out of wind
+else
+    error("behaviour not recognised for a metabolically active bumblebee")
 end
+
 
 
 honeybee.M_b = 0.100;              % mass of the bee in g, Joos1991
@@ -213,12 +208,10 @@ honeybee.epsilon_e = 0.97;         % emmisivity of a bee thorax
 honeybee.T_mK = 47.9+273.15;       % median temp for  evaporative cooling
 honeybee.T_ref = 25+273.15;        % Reference temp for metabolic rate calculations
 honeybee.r0 = 0;                   % rate of heat transfer to abdomen J/s/◦C
-honeybee.R_0 = 0.000616/2;         %radius of nectar droplet, half avg width of tongue, in m, so drop is width of tongue
+honeybee.R_0 = 0.000616/2;         % radius of nectar droplet, half avg width of tongue, in m, so drop is width of tongue
 honeybee.LethalTemp = 52;          % lethal thorax/air temp in C
 honeybee.CoolingTemp = 47.9;       % thorax temp where cooling begins
 honeybee.FlyingTemp = 35;          % thorax temp where flight can begin
-
-honeybee.Tth_initial = 39+273.15;   %initial temperature of the bee's thorax in K
 
 if crop=="oilseed"
     honeybee.t_handline = 4.0;     % Flower handling time (s?)

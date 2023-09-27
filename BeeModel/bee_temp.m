@@ -7,10 +7,9 @@
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Set scenario parameters
-species='honeybee';       % Either 'honeybee' or 'bumblebee'
-metabolism='resting';     % Either 'resting' or 'active'
-cooling = "none";         % Either "none", "head" or "abdomen"
-behaviour = "flying";    % Either "flying", "shivering", "onflower" or "resting"
+species='bumblebee';       % Either 'honeybee' or 'bumblebee'
+cooling = "abdomen";       % Either "none", "head" or "abdomen"
+behaviour = "flying";      % Either "flying", "shivering", "onflower" or "resting"
 % Note flying bees must be metabolically active
 crop = "oilseed";         % Either "oilseed" or "fieldbeans"
 
@@ -18,12 +17,14 @@ crop = "oilseed";         % Either "oilseed" or "fieldbeans"
 
 % Initial conditions
 Tth_initial = 30+273.15;   % Statrting thorax temperature (Kelvin)
+% 39 deg C for honeybee
+% 30 deg C for bumblebee
 
 % Time span to integrate temperature over (s)
-tspan = 0:2000; 
+tspan = [0:2000]; 
 
 % Call function to define parameters based upon scenario
-params = set_parameters(species, metabolism, cooling, behaviour, crop);
+params = set_parameters(species, cooling, behaviour, crop);
 
 % ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 % ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -38,6 +39,9 @@ params = set_parameters(species, metabolism, cooling, behaviour, crop);
 % ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
+% Estimate diameter of the head
+params.d_h = params.d_th * sqrt(params.A_h/params.A_th);
+
 
 % Constants for heat convection calculations ++++++++++++++++++++++
 
@@ -51,7 +55,7 @@ params.rho = params.Pr/(params.R_specific * params.T_air);
 %kinematic viscosity for humid air %The Shock Absorber Handbook
 params.nu = mu / params.rho;
 
-% % Calculation for thermal conductvity of air
+% Calculation for thermal conductvity of air
 params.kappa =  (0.02646*params.T_air^1.5)/(params.T_air+245.4*10^(-12/params.T_air));
 
 % Constants for evaporation calculations +++++++++++++++++++++++++++
@@ -73,7 +77,7 @@ Y_air = 1/( 1 + ((1-X_air)/X_air)*(params.MM_air/params.MM_vapor) );
 m_evap_coef = 2*pi* params.R_0 * rho_humid * params.D_A;
 
 params.evap_coef1 = params.h_fg * m_evap_coef * log(1-Y_air);   %constant for a fixed T_air
-params.evap_coef2 = -params.h_fg * m_evap_coef;   %*log(1-Y_sfc)
+params.evap_coef2 = -params.h_fg * m_evap_coef;                 %*log(1-Y_sfc)
 
 % ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 % ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -82,12 +86,20 @@ params.evap_coef2 = -params.h_fg * m_evap_coef;   %*log(1-Y_sfc)
 
 
 
-
-%% Calculate rate of change of Tth
+%% Integrate Tth using ode45
 % ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-opts = odeset('Events',@(t,y)myEvent(t,y,maxy),'RelTol',1e-12,'AbsTol',1e-14);
 
-dTth_dt(0,23+273.15, params)
+opts = odeset('Events',@(t,T)myEvent(t,T,params.Tth_max),'RelTol',1e-12,'AbsTol',1e-14);
 
-% [t,Tth] = ode45(@(t,Tth) dTth_dt(t, Tth, params), tspan, Tth_initial, opts);
+
+
+[t,Tth] = ode45(@(t,Tth) dTth_dt(t, Tth, params), tspan, Tth_initial, opts);
+
+
+[t,Tth]
+
+
+
+%% Plot some results
+plot(t, Tth-273.15)
