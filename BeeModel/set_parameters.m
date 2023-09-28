@@ -167,13 +167,6 @@ end
 honeybee.A_th = 4.5e-5;            % thorax surface area in m^2, from ???
 honeybee.A_h = 2.46e-5;            % head surface area in m^2, from Cooper1985 
 
-if metabolism=="active"
-    honeybee.i0 = 0.0335;          % reference active metabolic rate (fitted) (J/s)
-else
-    honeybee.i0 = 0.000425;        % reference resting metabolic rate (J/s)
-end
-honeybee.E = 0.008*phys.e;         % activation energy (fitted) (J)
-
 
 if behaviour=="flying"
     honeybee.i0 =   0.034027;        % reference active metabolic rate (fitted) (J/s)
